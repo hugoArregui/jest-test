@@ -1,34 +1,42 @@
-import { test } from "../components"
+import LeakDetector from 'jest-leak-detector'
 
-test("integration sanity tests using a real server backend", function ({ components, spyComponents }) {
-  it("responds /ping", async () => {
-    const { localFetch } = components
+export function loadTest(): (name: string, test: (testEnv: any) => void) => void {
+  return (name, test) => {
+    describe(name, () => {
+      let testEnv = { test: () => false }
 
-    const r = await localFetch.fetch("/ping")
+      test(testEnv)
 
-    expect(r.status).toEqual(200)
-    expect(await r.text()).toEqual("/ping")
-  })
+      afterAll(async () => {
+        const detector = new LeakDetector(testEnv)
+        testEnv = null as any
+        expect(await detector.isLeaking()).toBe(false)
+      })
+    })
+  }
+}
 
-  it("calling /ping increments a metric", async () => {
-    const { localFetch } = components
-
-    // create the spy
-    spyComponents.metrics.increment
-
-    const r = await localFetch.fetch("/ping")
-
-    expect(r.status).toEqual(200)
-    expect(await r.text()).toEqual("/ping")
-
-    expect(spyComponents.metrics.increment).toBeCalledWith("test_ping_counter", { pathname: "/ping" })
-  })
-
-  it("random url responds 404", async () => {
-    const { localFetch } = components
-
-    const r = await localFetch.fetch("/ping" + Math.random())
-
-    expect(r.status).toEqual(404)
+loadTest()('Test: leak', (testEnv) => {
+  it('bla', () => {
+    testEnv.test()
   })
 })
+
+
+
+
+// describe('Test: no leak', () => {
+//   describe('bla', () => {
+//     let testEnv = { test: () => false }
+
+//     it('bla', () => {
+//       testEnv.test()
+//     })
+
+//     afterAll(async () => {
+//       const detector = new LeakDetector(testEnv)
+//       testEnv = null as any
+//       expect(await detector.isLeaking()).toBe(false)
+//     })
+//   })
+// })
