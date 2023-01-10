@@ -1,6 +1,6 @@
 import LeakDetector from 'jest-leak-detector'
 
-export function loadTest(): (name: string, test: (testEnv: any) => void) => void {
+function loadTest(): (name: string, test: (testEnv: any) => void) => void {
   return (name, test) => {
     describe(name, () => {
       let testEnv = { test: () => false }
